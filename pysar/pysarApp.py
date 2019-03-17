@@ -423,11 +423,10 @@ class TimeSeriesAnalysis:
 
     def run_unwrap_error_correction(self, step_name):
         """Correct phase-unwrapping errors"""
-        status = 0
         method = self.template['pysar.unwrapError.method']
         if not method:
             print('phase-unwrapping error correction is OFF.')
-            return status
+            return
 
         # check the existence of ifgramStack.h5
         stack_file = ut.check_loaded_dataset(self.workDir, print_msg=False)[1]
@@ -680,8 +679,8 @@ class TimeSeriesAnalysis:
                         print('diff.py ', diff_args)
                         pysar.diff.main(diff_args.split())
                     else:
-                        import pysar.tropo_pyaps
-                        pysar.tropo_pyaps.main(tropo_pyaps_args.split())
+                        from pysar import tropo_pyaps
+                        tropo_pyaps.main(tropo_pyaps_args.split())
         else:
             print('No tropospheric delay correction.')
 
@@ -694,7 +693,6 @@ class TimeSeriesAnalysis:
         fnames = self.get_timeseries_filename(self.template)[step_name]
         in_file = fnames['input']
         out_file = fnames['output']
-        status = 0
         if in_file != out_file:
             print('Remove for each acquisition a phase ramp: {}'.format(method))
             remove_ramp_args = '{f} -s {s} -m {m} -o {o}'.format(f=in_file, s=method, m=mask_file, o=out_file)
@@ -703,7 +701,6 @@ class TimeSeriesAnalysis:
                 pysar.remove_ramp.main(remove_ramp_args.split())
         else:
             print('No phase ramp removal.')
-        return status
 
 
     def run_topographic_residual_correction(self, step_name):
@@ -714,7 +711,6 @@ class TimeSeriesAnalysis:
         fnames = self.get_timeseries_filename(self.template)[step_name]
         in_file = fnames['input']
         out_file = fnames['output']
-        status = 0
         if in_file != out_file:
             dem_error_args = '{f} -g {g} -t {t} -o {o} --update '.format(f=in_file,
                                                                            g=geom_file,
@@ -724,25 +720,21 @@ class TimeSeriesAnalysis:
             pysar.dem_error.main(dem_error_args.split())
         else:
             print('No topographic residual correction.')
-        return status
 
 
     def run_residual_phase_rms(self, step_name):
         """Noise evaluation based on the phase residual."""
         res_file = 'timeseriesResidual.h5'
-        status = 0
         if os.path.isfile(res_file):
             timeseries_rms_args = '{} -t {}'.format(res_file, self.templateFile)
             print('timeseries_rms.py ', timeseries_rms_args)
             pysar.timeseries_rms.main(timeseries_rms_args.split())
         else:
             print('No residual phase file found! Skip residual RMS analysis.')
-        return status
 
 
     def run_reference_date(self, step_name):
         """Change reference date for all time-series files (optional)."""
-        status = 0
         if self.template['pysar.reference.date']:
             in_files = self.get_timeseries_filename(self.template)[step_name]['input']
             reference_date_args = '-t {} '.format(self.templateFile)
@@ -752,7 +744,6 @@ class TimeSeriesAnalysis:
             pysar.reference_date.main(reference_date_args.split())
         else:
             print('No reference date change.')
-        return status
 
 
     def run_timeseries2velocity(self, step_name):
@@ -820,7 +811,6 @@ class TimeSeriesAnalysis:
 
     def run_save2google_earth(self, step_name):
         """Save velocity file in geo coordinates into Google Earth raster image."""
-        status = 0
         if self.template['pysar.save.kmz'] is True:
             print('creating Google Earth KMZ file for geocoded velocity file: ...')
             # input
@@ -843,12 +833,10 @@ class TimeSeriesAnalysis:
                 pysar.save_kmz.main(save_kmz_args.split())
         else:
             print('save velocity to Google Earth format is OFF.')
-        return status
 
 
     def run_save2hdfeos5(self, step_name):
         """Save displacement time-series and its aux data in geo coordinate into HDF-EOS5 format"""
-        status = 0
         if self.template['pysar.save.hdfEos5'] is True:
             # input
             ts_file = self.get_timeseries_filename(self.template)[step_name]['input']
@@ -884,7 +872,6 @@ class TimeSeriesAnalysis:
                 pysar.save_hdfeos5.main(save_hdfeos5_args.split())
         else:
             print('save time-series to HDF-EOS5 format is OFF.')
-        return status
 
 
     def plot_result(self, print_aux=True, plot=True):
@@ -948,49 +935,49 @@ class TimeSeriesAnalysis:
                 status = self.run_load_data(sname)
 
             elif sname == 'reference_point':
-                status = self.run_reference_point(sname)
+                self.run_reference_point(sname)
 
             elif sname == 'stack_interferograms':
-                status = self.run_ifgram_stacking(sname)
+                self.run_ifgram_stacking(sname)
 
             elif sname == 'correct_unwrap_error':
-                status = self.run_unwrap_error_correction(sname)
+                self.run_unwrap_error_correction(sname)
 
             elif sname == 'modify_network':
-                status = self.run_network_modification(sname)
+                self.run_network_modification(sname)
 
             elif sname == 'invert_network':
-                status = self.run_network_inversion(sname)
+                self.run_network_inversion(sname)
 
             elif sname == 'correct_LOD':
-                status = self.run_local_oscillator_drift_correction(sname)
+                self.run_local_oscillator_drift_correction(sname)
 
             elif sname == 'correct_troposphere':
-                status = self.run_tropospheric_delay_correction(sname)
+                self.run_tropospheric_delay_correction(sname)
 
             elif sname == 'deramp':
-                status = self.run_phase_deramping(sname)
+                self.run_phase_deramping(sname)
 
             elif sname == 'correct_topography':
-                status = self.run_topographic_residual_correction(sname)
+                self.run_topographic_residual_correction(sname)
 
             elif sname == 'residual_RMS':
-                status = self.run_residual_phase_rms(sname)
+                self.run_residual_phase_rms(sname)
 
             elif sname == 'reference_date':
-                status = self.run_reference_date(sname)
+                self.run_reference_date(sname)
 
             elif sname == 'velocity':
-                status = self.run_timeseries2velocity(sname)
+                self.run_timeseries2velocity(sname)
 
             elif sname == 'geocode':
                 status = self.run_geocode(sname)
 
             elif sname == 'google_earth':
-                status = self.run_save2google_earth(sname)
+                self.run_save2google_earth(sname)
 
             elif sname == 'hdfeos5':
-                status = self.run_save2hdfeos5(sname)
+                self.run_save2hdfeos5(sname)
 
             if status is not 0:
                 # plot result if error occured
